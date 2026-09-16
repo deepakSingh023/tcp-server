@@ -30,7 +30,7 @@ int make_nonBlocking(int fd){
 }
 
 
-int main(int argc, char *argv[]){
+int main(){
     
 
     //create the tcp listenign socket
@@ -80,7 +80,7 @@ int main(int argc, char *argv[]){
 
     //epoll setup listening on the fd 3 which is the socket
     struct epoll_event event;
-    event.events = EPOLLIN;
+    event.events = EPOLLIN ;
     event.data.fd = server_fd;
     
     epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &event);
@@ -126,7 +126,7 @@ int main(int argc, char *argv[]){
 
                 struct epoll_event client_event;
 
-                client_event.events = EPOLLIN;
+                client_event.events = EPOLLIN| EPOLLET;
                 client_event.data.fd = client_fd;
 
                 if (epoll_ctl(
@@ -146,33 +146,42 @@ int main(int argc, char *argv[]){
             
             }else{
 
+
                 char Buffer[4096];
 
-                ssize_t receiver_data = recv(fd, Buffer, sizeof(Buffer) - 1, 0);
+                while(1){
 
-                if (receiver_data == -1) {
+                    ssize_t receiver_data = recv(fd, Buffer, sizeof(Buffer) - 1, 0);
+
+                    if(receiver_data > 0){
+                        ssize_t bytes_sent = send(fd, Buffer, receiver_data, 0);
+
+                        if(bytes_sent == -1){
+                            perror("send");
+                            continue;
+                        }
+                        continue;
+                    }
+
+                    if (receiver_data == 0) {
+                         // client closed connection
+                         break;
+                    }
+
                     if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                        continue;
+                        // nothing currently left
+                        break;
                     }
-                
+
                     perror("recv");
-                    close(fd);
-                    continue;
+
+                    break;
+
+
+
                 }
 
-                ssize_t bytes_sent = send(fd, Buffer, receiver_data, 0);
 
-                if (bytes_sent == -1) {
-
-                    if (errno == EAGAIN ||
-                        errno == EWOULDBLOCK) {
-                        continue;
-                    }
-
-                    perror("send");
-                    close(fd);
-                    continue;
-                }
             }
         }
     }
