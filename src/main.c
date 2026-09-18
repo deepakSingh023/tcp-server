@@ -35,12 +35,6 @@ int make_nonBlocking(int fd){
 
 int main(){
 
-    typedef enum {
-    EVENT_LISTENER,
-    EVENT_CLIENT
-    } EventType;
-    
-
     //create the tcp listenign socket
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -89,10 +83,20 @@ int main(){
     //epoll setup listening on the fd 3 which is the socket
     struct epoll_event event;
     event.events = EPOLLIN ;
-    event.data.fd = server_fd;
-    
-    epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &event);
-    
+    event.data.ptr = NULL;
+
+    if (epoll_ctl(
+        epoll_fd,
+        EPOLL_CTL_ADD,
+        server_fd,
+        &event
+    ) == -1) {
+        perror("epoll_ctl listener");
+        close(epoll_fd);
+        close(server_fd);
+        return 1;
+    }
+        
     struct epoll_event events[MAX_EVENTS];
 
     while(1){
@@ -110,9 +114,9 @@ int main(){
 
         for(int i = 0 ; i < event_count; i++){
 
-            Connection *connection = events[i].data.ptr;
+            Connection *conn = events[i].data.ptr;
 
-            if(fd == server_fd){
+            if(conn == NULL){
                 int client_fd = accept(server_fd, NULL, NULL);
 
                 if (client_fd == -1) {
@@ -132,7 +136,7 @@ int main(){
                     continue;
                 }
 
-                Connection *conn = malloc(sizeof(Connection));
+                conn = malloc(sizeof(Connection));
 
                 if( conn == NULL){
                     perror("malloc failed in main");
@@ -163,7 +167,6 @@ int main(){
                     free(conn);
                     close(client_fd);
                     perror("epoll_ctl client");
-                    close(client_fd);
                     continue;
                 }
 
@@ -177,13 +180,12 @@ int main(){
 
                 while(1){
 
-                    ssize_t receiver_data = recv(connection->fd, Buffer, sizeof(Buffer) - 1, 0);
+                    ssize_t receiver_data = recv(conn->fd, Buffer, sizeof(Buffer) - 1, 0);
 
-                    Connection *connection = events[i].data.ptr;
 
                     if(receiver_data > 0){
 
-                        if(buffer_append(&connection->input,Buffer,receiver_data) == -1){
+                        if(buffer_append(&conn->input,Buffer,receiver_data) == -1){
                             perror("not appended");
                             return -1;
                         }
@@ -191,8 +193,15 @@ int main(){
                     }
 
                     if (receiver_data == 0) {
-                         // client closed connection
-                         break;
+                        // client closed connection
+                    
+                        epoll_ctl(epoll_fd, EPOLL_CTL_DEL, conn->fd, NULL);
+                    
+                        close(conn->fd);
+                        connection_free(conn);
+                        free(conn);
+                    
+                        break;
                     }
 
                     if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -201,6 +210,14 @@ int main(){
                     }
 
                     perror("recv");
+                    
+                    epoll_ctl(epoll_fd, EPOLL_CTL_DEL, conn->fd, NULL);
+                    
+                    close(conn->fd);
+                    connection_free(conn);
+                    free(conn);
+                    
+                    break;
 
                     break;
 
