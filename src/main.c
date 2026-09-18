@@ -7,8 +7,11 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-
+#include "connection.h"
 #include <arpa/inet.h>// inet_addr(), inet_pton()
+#include <stddef.h> 
+
+
 
 #include <fcntl.h>
 #define MAX_EVENTS 64
@@ -31,6 +34,11 @@ int make_nonBlocking(int fd){
 
 
 int main(){
+
+    typedef enum {
+    EVENT_LISTENER,
+    EVENT_CLIENT
+    } EventType;
     
 
     //create the tcp listenign socket
@@ -102,7 +110,7 @@ int main(){
 
         for(int i = 0 ; i < event_count; i++){
 
-            int fd = events[i].data.fd;
+            Connection *connection = events[i].data.ptr;
 
             if(fd == server_fd){
                 int client_fd = accept(server_fd, NULL, NULL);
@@ -124,18 +132,36 @@ int main(){
                     continue;
                 }
 
+                Connection *conn = malloc(sizeof(Connection));
+
+                if( conn == NULL){
+                    perror("malloc failed in main");
+                    return -1;
+                }
+
+                if(connection_init(conn,client_fd) == -1){
+                    free(conn);
+                    close(client_fd);
+                    perror("failed to initiate");
+                    return -1;
+
+                }
+                
+
                 struct epoll_event client_event;
 
                 client_event.events = EPOLLIN| EPOLLET;
-                client_event.data.fd = client_fd;
+                client_event.data.ptr = conn;
 
                 if (epoll_ctl(
                     epoll_fd,
                     EPOLL_CTL_ADD,
-                    client_fd,
+                    conn->fd,
                     &client_event
                 ) == -1) {
-
+                    connection_free(conn);
+                    free(conn);
+                    close(client_fd);
                     perror("epoll_ctl client");
                     close(client_fd);
                     continue;
@@ -151,14 +177,15 @@ int main(){
 
                 while(1){
 
-                    ssize_t receiver_data = recv(fd, Buffer, sizeof(Buffer) - 1, 0);
+                    ssize_t receiver_data = recv(connection->fd, Buffer, sizeof(Buffer) - 1, 0);
+
+                    Connection *connection = events[i].data.ptr;
 
                     if(receiver_data > 0){
-                        ssize_t bytes_sent = send(fd, Buffer, receiver_data, 0);
 
-                        if(bytes_sent == -1){
-                            perror("send");
-                            continue;
+                        if(buffer_append(&connection->input,Buffer,receiver_data) == -1){
+                            perror("not appended");
+                            return -1;
                         }
                         continue;
                     }
