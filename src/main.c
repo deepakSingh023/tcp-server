@@ -10,12 +10,11 @@
 #include "connection.h"
 #include <arpa/inet.h>// inet_addr(), inet_pton()
 #include <stddef.h> 
-
-
-
+#include "thread_pool.h"
 #include <fcntl.h>
 #define MAX_EVENTS 64
-
+#define _GNU_SOURCE
+#include <string.h>
 int make_nonBlocking(int fd){
 
     int flag = fcntl(fd , F_GETFL , 0);
@@ -32,8 +31,59 @@ int make_nonBlocking(int fd){
 
 }
 
+int helper_funtion(Buffer *buffer){
+    char *found = memmem(
+        buffer->data,
+        buffer->length,
+        "\r\n\r\n",
+        4
+    ); 
+
+    if(found == NULL){
+        return -1;
+    }
+
+    size_t header_end = (char *)found - buffer->data;
+    size_t body_start = header_end + 4;
+
+    char *content_length = memmem(
+        buffer->data,
+        header_end,
+        "Content-Length:",
+        15
+    );
+    if (content_length == NULL) {
+        return -1;
+    }
+
+    size_t cont = (char *)content_length - buffer->data;
+
+    size_t length_start = cont + 15;
+
+    size_t content_len = 0;
+
+    for (size_t i = length_start; i < header_end; i++) {
+    
+        if (buffer->data[i] < '0' ||
+            buffer->data[i] > '9') {
+            break;
+        }
+    
+        content_len =
+            content_len * 10 +
+            (buffer->data[i] - '0');
+    }
+
+    return 0;
+
+}
+
 
 int main(){
+
+    ThreadPool pool;
+
+    thread_pool_init(&pool);
 
     //create the tcp listenign socket
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);

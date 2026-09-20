@@ -8,6 +8,9 @@ typedef struct{
     int fd;
     Buffer input;
     Buffer output;
+    size_t header_end;
+    size_t body_length;
+    size_t body_received;
 } Connection;
 
 

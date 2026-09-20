@@ -1,0 +1,28 @@
+#ifndef THREAD_POOL_H
+#define THREAD_POOL_H
+#include <pthread.h>
+#include "task_queue.h"
+
+#define WORKER_COUNT 4
+
+
+
+
+typedef struct 
+{
+    pthread_t worker[WORKER_COUNT];
+    TaskQueue queue;
+}ThreadPool;
+
+
+
+
+
+void thread_pool_init(ThreadPool *pool);
+
+void *worker_function(void *arg);
+
+
+
+#endif
+
