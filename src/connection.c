@@ -18,6 +18,8 @@ int connection_init(Connection *connection, int fd)
     if (buffer_init(&connection->output) == -1)
         return -1;
 
+    http_parser_init(&connection->parser);
+
     return 0;
 }
 

@@ -2,15 +2,14 @@
 #define CONNECTION_H
 #include "buffer.h"
 #include <stddef.h>
+#include "http_parser.h"
 
 
 typedef struct{
     int fd;
     Buffer input;
     Buffer output;
-    size_t header_end;
-    size_t body_length;
-    size_t body_received;
+    HttpParser parser;
 } Connection;
 
 
