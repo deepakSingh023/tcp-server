@@ -1,9 +1,9 @@
 #include "thread_pool.h"
 #include <stdio.h>
-#include "connection.h">
+#include "connection.h"
 #include "router.h"
 #include "http_request.h"
-
+#include "completion_queue.h"
 
 void thread_pool_init(ThreadPool *pool){
 
@@ -57,6 +57,11 @@ void *worker_function(void *arg)
         }
 
         http_request_free(&httprequest);
+
+        completion_enqueue(
+            pool->completion_queue,
+            conn
+        );
 
         printf(
             "Worker processed connection fd=%d\n",
