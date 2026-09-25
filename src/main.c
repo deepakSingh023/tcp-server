@@ -130,8 +130,6 @@ int main()
 
     event.events = EPOLLIN;
 
-    // NULL means this is the listening socket.
-    event.data.ptr = &listener_context;
 
 
     if (epoll_ctl(
@@ -332,6 +330,22 @@ int main()
                     while ((conn = completion_dequeue(&completion_queue)) != NULL) {
                 
                         conn->state = CONNECTION_IDLE;
+
+                        if(conn->close_requested == 1){
+                            epoll_ctl(
+                                epoll_fd,
+                                EPOLL_CTL_DEL,
+                                conn->fd,
+                                NULL
+                            );
+
+                            close(conn->fd);
+                            connection_free(conn);
+                            free(conn->context);
+                            free(conn);
+                    
+                            continue;
+                        }
                 
                         struct epoll_event event;
                         memset(&event, 0, sizeof(event));
@@ -354,6 +368,7 @@ int main()
                 case EPOLL_CONNECTION: {
         
                     Connection *conn = context->connection;
+                    int connection_destroyed=0;
 
                     if(events[i].events & EPOLLIN){
     
@@ -387,8 +402,9 @@ int main()
             
                                     close(conn->fd);
                                     connection_free(conn);
-            
                                     free(context);
+                                    free(conn);
+                                    connection_destroyed = 1;
             
                                     break;
                                 }
@@ -434,6 +450,8 @@ int main()
                                         "HTTP parser error on fd=%d\n",
                                         conn->fd
                                     );
+
+                                    conn->close_requested = 1;
             
                                     epoll_ctl(
                                         epoll_fd,
@@ -444,8 +462,9 @@ int main()
             
                                     close(conn->fd);
                                     connection_free(conn);
-            
                                     free(context);
+                                    free(conn);
+                                    connection_destroyed = 1;
             
                                     break;
                                 }
@@ -454,24 +473,26 @@ int main()
                             }
             
                             if (received == 0) {
-            
-                                printf(
-                                    "Client disconnected: fd=%d\n",
-                                    conn->fd
-                                );
-            
-                                epoll_ctl(
-                                    epoll_fd,
-                                    EPOLL_CTL_DEL,
-                                    conn->fd,
-                                    NULL
-                                );
-            
-                                close(conn->fd);
-                                connection_free(conn);
-            
-                                free(context);
-            
+                            
+                                printf("Client disconnected: fd=%d\n", conn->fd);
+                            
+                                conn->close_requested = 1;
+                            
+                                if (conn->state == CONNECTION_IDLE) {
+                                    epoll_ctl(
+                                        epoll_fd,
+                                        EPOLL_CTL_DEL,
+                                        conn->fd,
+                                        NULL
+                                    );
+                            
+                                    close(conn->fd);
+                                    connection_free(conn);
+                                    free(context);
+                                    free(conn);
+                                    connection_destroyed = 1;
+                                }
+                            
                                 break;
                             }
             
@@ -480,28 +501,33 @@ int main()
             
                                 break;
                             }
-            
+                                        
                             perror("recv");
-            
-                            epoll_ctl(
-                                epoll_fd,
-                                EPOLL_CTL_DEL,
-                                conn->fd,
-                                NULL
-                            );
-            
-                            close(conn->fd);
-                            connection_free(conn);
-            
-                            free(context);
-            
+                            
+                            conn->close_requested = 1;
+                            
+                            if (conn->state == CONNECTION_IDLE) {
+                                epoll_ctl(
+                                    epoll_fd,
+                                    EPOLL_CTL_DEL,
+                                    conn->fd,
+                                    NULL
+                                );
+                            
+                                close(conn->fd);
+                                connection_free(conn);
+                                free(context);
+                                free(conn);
+                                connection_destroyed = 1;
+                            }
+                            
                             break;
                         }
     
-    
-    
-    
-    
+                    }
+
+                    if (connection_destroyed) {
+                        continue;
                     }
 
 
@@ -522,6 +548,7 @@ int main()
                             close(conn->fd);
                             connection_free(conn);
                             free(context);
+                            free(conn);
                     
                             break;
                         }
@@ -544,6 +571,8 @@ int main()
                             }
                         }
                     }
+
+
             
     
         

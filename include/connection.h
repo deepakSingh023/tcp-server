@@ -35,6 +35,8 @@ struct Connection {
 
     ConnectionState state;
 
+    int close_requested;
+
     EpollContext *context;
 };
 

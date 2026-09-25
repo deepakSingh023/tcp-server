@@ -23,6 +23,7 @@ int connection_init(Connection *connection, int fd)
     http_parser_init(&connection->parser);
     connection->state = CONNECTION_IDLE;
     connection->context = NULL;
+    connection->close_requested = 0;
 
     return 0;
 }
