@@ -318,19 +318,27 @@ int main()
         
         
                 case EPOLL_EVENTFD: {
-
+                
+                    uint64_t value;
+                
+                    if (read(event_fd, &value, sizeof(value)) == -1) {
+                        if (errno != EAGAIN && errno != EWOULDBLOCK) {
+                            perror("read eventfd");
+                        }
+                    }
+                
                     Connection *conn;
-
+                
                     while ((conn = completion_dequeue(&completion_queue)) != NULL) {
-                    
+                
                         conn->state = CONNECTION_IDLE;
-                    
+                
                         struct epoll_event event;
                         memset(&event, 0, sizeof(event));
-                    
+                
                         event.events = EPOLLIN | EPOLLOUT | EPOLLET;
                         event.data.ptr = conn->context;
-                    
+                
                         epoll_ctl(
                             epoll_fd,
                             EPOLL_CTL_MOD,
@@ -338,7 +346,7 @@ int main()
                             &event
                         );
                     }
-        
+                
                     break;
                 }
         

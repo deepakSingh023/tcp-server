@@ -4,7 +4,8 @@
 #include "router.h"
 #include "http_request.h"
 #include "completion_queue.h"
-
+#include <stdint.h>
+#include <unistd.h>
 void thread_pool_init(ThreadPool *pool){
 
     task_queue_init(&pool->queue);
@@ -61,6 +62,14 @@ void *worker_function(void *arg)
         completion_enqueue(
             pool->completion_queue,
             conn
+        );
+        
+        uint64_t value = 1;
+        
+        write(
+            pool->event_fd,
+            &value,
+            sizeof(value)
         );
 
         printf(
