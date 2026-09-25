@@ -5,5 +5,5 @@
 
 void create_response(Connection *conn,HttpRequest *httprequest );
 
-
+void response_404(Connection *conn);
 #endif

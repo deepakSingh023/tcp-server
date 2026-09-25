@@ -9,4 +9,5 @@ void users_controller(HttpRequest *request , Connection *conn);
 
 void print_controller(HttpRequest *request, Connection *conn);
 
+void root_controller(HttpRequest *request , Connection *conn);
 #endif

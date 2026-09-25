@@ -21,6 +21,15 @@ int router_handle(HttpRequest *request , Connection *conn)
         return 0;
     }
 
+
+    if (
+        strcmp(request->method, "GET") == 0 &&
+        strcmp(request->path, "/") == 0
+    ) {
+        root_controller(request,conn);
+        return 0;
+    }
+
     return 404;
 
     

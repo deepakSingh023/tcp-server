@@ -51,3 +51,48 @@ void create_response(Connection *conn, HttpRequest *request)
         length
     );
 }
+
+
+
+void response_404(Connection *conn)
+{
+    const char *body = "Not Found";
+
+    int length = snprintf(
+        NULL,
+        0,
+        "HTTP/1.1 404 Not Found\r\n"
+        "Content-Type: text/plain\r\n"
+        "Content-Length: %zu\r\n"
+        "Access-Control-Allow-Origin: *\r\n"
+        "\r\n"
+        "%s",
+        strlen(body),
+        body
+    );
+
+    if (length < 0) {
+        return;
+    }
+
+    char response[length + 1];
+
+    snprintf(
+        response,
+        length + 1,
+        "HTTP/1.1 404 Not Found\r\n"
+        "Content-Type: text/plain\r\n"
+        "Content-Length: %zu\r\n"
+        "Access-Control-Allow-Origin: *\r\n"
+        "\r\n"
+        "%s",
+        strlen(body),
+        body
+    );
+
+    buffer_append(
+        &conn->output,
+        response,
+        length
+    );
+}

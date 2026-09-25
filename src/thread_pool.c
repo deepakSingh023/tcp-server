@@ -5,6 +5,7 @@
 #include "http_request.h"
 #include "completion_queue.h"
 #include <stdint.h>
+#include "response.h"
 #include <unistd.h>
 void thread_pool_init(ThreadPool *pool){
 
@@ -54,7 +55,7 @@ void *worker_function(void *arg)
         if (route_result == 404) {
             printf("Route not found\n");
 
-            // create the 404 response later.
+            response_404(conn);
         }
 
         http_request_free(&httprequest);
