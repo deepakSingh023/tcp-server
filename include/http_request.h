@@ -14,17 +14,17 @@
 
 #define MAX_HEADERS 32
 
+typedef struct {
+    char name[64];
+    char value[256];
+} HttpHeader;
+
 
 typedef struct {
     HttpHeader items[MAX_HEADERS];
     size_t count;
 } HttpHeaders;
 
-
-typedef struct {
-    char name[64];
-    char value[256];
-} HttpHeader;
 
 typedef struct {
     char method[16];
