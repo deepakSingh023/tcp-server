@@ -6,13 +6,13 @@
 
 
 
-void enqueue(TaskQueue *queue, Task task){
+int enqueue(TaskQueue *queue, Task task){
 
     pthread_mutex_lock(&queue->mutex);
 
     if(queue->count == MAX_SIZE){
         pthread_mutex_unlock(&queue->mutex);
-        return;
+        return -1;
     }
 
     queue->tasks[queue->rear] = task;
@@ -23,6 +23,8 @@ void enqueue(TaskQueue *queue, Task task){
     pthread_cond_signal(&queue->condition);
 
     pthread_mutex_unlock(&queue->mutex);
+
+    return 0;
 
 }
 

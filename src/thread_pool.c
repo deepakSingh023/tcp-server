@@ -59,6 +59,8 @@ void *worker_function(void *arg)
         }
 
         http_request_free(&httprequest);
+        conn->input.length = 0;           // this request is consumed
+        http_parser_init(&conn->parser);  // ready for the next one
 
         completion_enqueue(
             pool->completion_queue,
@@ -73,10 +75,10 @@ void *worker_function(void *arg)
             sizeof(value)
         );
 
-        printf(
-            "Worker processed connection fd=%d\n",
-            conn->fd
-        );
+        // printf(
+        //     "Worker processed connection fd=%d\n",
+        //     conn->fd
+        // );
     }
 
     return NULL;

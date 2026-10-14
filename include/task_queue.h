@@ -23,7 +23,7 @@ typedef struct
 }TaskQueue;
 
 
-void enqueue(TaskQueue *queue, Task task);
+int enqueue(TaskQueue *queue, Task task);
 
 
 Task dequeue(TaskQueue *queue);

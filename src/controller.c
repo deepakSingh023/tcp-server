@@ -22,9 +22,5 @@ void print_controller(HttpRequest *request ,Connection *conn ){
 }
 
 void root_controller(HttpRequest *request , Connection *conn){
-
-    printf("root api");
-
     create_response(conn,request);
-
 }

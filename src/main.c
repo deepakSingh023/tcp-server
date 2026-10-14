@@ -77,6 +77,9 @@ int main()
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(8080);
 
+    int opt = 1;
+    setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
 
     if (bind(
         server_fd,
@@ -90,7 +93,7 @@ int main()
     }
 
 
-    if (listen(server_fd, 10) == -1) {
+    if (listen(server_fd,SOMAXCONN) == -1) {
 
         perror("listen failed");
         close(server_fd);
@@ -179,6 +182,7 @@ int main()
         return 1;
     }
 
+    //We use Level Triggered(LT) with a while loop for optimization to keep the server running and drain all the connecting client at once
     while (1) {
 
         int event_count = epoll_wait(
@@ -305,10 +309,10 @@ int main()
                             continue;
                         }
         
-                        printf(
+/*                        printf(
                             "Client connected: fd=%d\n",
                             client_fd
-                        );
+                        );*/
                     }
         
                     break;
@@ -365,6 +369,7 @@ int main()
                 }
         
         
+                //We use the Edge triggered(ET) and while loop to drain all the data at once
                 case EPOLL_CONNECTION: {
         
                     Connection *conn = context->connection;
@@ -422,7 +427,15 @@ int main()
                                     Task task;
                                     task.conn = conn;
                                 
-                                    enqueue(&pool.queue, task);
+                                    if (enqueue(&pool.queue, task) == -1) {
+                                        epoll_ctl(epoll_fd, EPOLL_CTL_DEL, conn->fd, NULL);
+                                        close(conn->fd);
+                                        connection_free(conn);
+                                        free(context);
+                                        free(conn);
+                                        connection_destroyed = 1;
+                                        break;
+                                    }
                                 
                                     struct epoll_event event;
                                     memset(&event, 0, sizeof(event));
@@ -439,17 +452,17 @@ int main()
                                         perror("epoll_ctl processing");
                                     }
                                 
-                                    printf("request enqued\n");
+                                    // printf("request enqued\n");
                                 
                                     break;
                                 }
                                 if (result == -1) {
             
-                                    fprintf(
-                                        stderr,
-                                        "HTTP parser error on fd=%d\n",
-                                        conn->fd
-                                    );
+                                    // fprintf(
+                                    //     stderr,
+                                    //     "HTTP parser error on fd=%d\n",
+                                    //     conn->fd
+                                    // );
 
                                     conn->close_requested = 1;
             
@@ -474,7 +487,7 @@ int main()
             
                             if (received == 0) {
                             
-                                printf("Client disconnected: fd=%d\n", conn->fd);
+                                // printf("Client disconnected: fd=%d\n", conn->fd);
                             
                                 conn->close_requested = 1;
                             
