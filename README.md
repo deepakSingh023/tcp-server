@@ -311,13 +311,11 @@ In particular, queue submission and completion errors need explicit handling. Fo
 
 ## Future Improvements
 
-The next improvements I would prioritize are:
-
-1. Handle task-queue and completion-queue saturation without silently losing work.
-2. Ensure worker errors cannot leave connections stuck in the processing state.
+1. Handle task-queue and completion-queue saturation when they get full gracefully without loosing work.
+2. Make sure worker errors cannot leave connections stuck in the processing state.
 3. Make connection ownership and cleanup explicit across the event loop and workers.
 4. Improve shutdown behavior and resource cleanup.
-5. Expand HTTP parsing and request validation.
+5. Expand HTTP parsing and request validation to proper standardize version.
 6. Add repeatable tests for partial writes, client disconnects, malformed requests, and queue saturation.
 7. Add metrics for queue depth, worker utilization, active connections, and request latency.
 8. Repeat benchmarks with controlled settings, including pinning the server and `wrk` to separate CPUs.
