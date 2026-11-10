@@ -1,0 +1,19 @@
+bytes=17 status=200 time=0.001270
+bytes=17 status=200 time=0.001206
+bytes=17 status=200 time=0.001262
+bytes=17 status=200 time=0.001064
+bytes=17 status=200 time=0.001390
+bytes=17 status=200 time=0.001363
+bytes=17 status=200 time=0.001245
+bytes=17 status=200 time=0.001155
+bytes=17 status=200 time=0.001200
+bytes=17 status=200 time=0.001341
+bytes=17 status=200 time=0.001282
+bytes=17 status=200 time=0.001193
+bytes=17 status=200 time=0.001500
+bytes=17 status=200 time=0.001167
+bytes=17 status=200 time=0.001195
+--- kernel listen-queue counters during this run ---
+#kernel
+TcpExtListenOverflows           0                  0.0
+TcpExtListenDrops               0                  0.0
